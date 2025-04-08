@@ -43,7 +43,7 @@
 import socket
 import optparse
 
-DEFAULT_IP   = socket.gethostbyname(socket.gethostname())   # IP address of the UDP server
+DEFAULT_IP   = '192.168.137.6'   # IP address of the UDP server 
 DEFAULT_PORT = 50007                                        # Port of the UDP server
 
 LED_ON = '1'
@@ -70,6 +70,8 @@ def echo_server(host, port):
     print('UDP Server on IP Address: {} port {}'.format(host, port))
     print('waiting to receive message from UDP Client')
 
+    return sock
+    """
     while True:
         data, addr = sock.recvfrom(4096)
         if data == bytes('A', "utf-8"):
@@ -84,15 +86,16 @@ def echo_server(host, port):
         else:
             print("Message from Client: {}".format(data))
             enter_command(sock, addr)
+    """
 
 
-if __name__ == '__main__':
+def udp_start():
     parser = optparse.OptionParser()
     parser.add_option("-p", "--port", dest="port", type="int", default=DEFAULT_PORT, help="Port to listen on [default: %default].")
     parser.add_option("--hostname", dest="hostname", default=DEFAULT_IP, help="Hostname to listen on.")
 
     (options, args) = parser.parse_args()
 
-    echo_server(options.hostname, options.port)
+    return echo_server(options.hostname, options.port)
 
 # [] END OF FILE
