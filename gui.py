@@ -89,12 +89,32 @@ class Telemetry:
         faultCode = int(hex_str[16:24], 16)
         
         return Telemetry(state, temp1, temp2, voltage, faultCode)
+    
+
+# Replaces standard sys.stdout with a GUI text box to display console output
+class ConsoleRedirect:
+    def __init__(self, text_widget):
+        self.text_widget = text_widget
+        self.text_widget.config(state="normal")  
+        self.text_widget.delete("1.0", tk.END)  
+        self.text_widget.config(state="disabled") 
+
+    def write(self, message):
+        self.text_widget.config(state="normal") 
+        self.text_widget.insert(tk.END, message) 
+        self.text_widget.see(tk.END) 
+        self.text_widget.config(state="disabled")  
+
+    def flush(self):
+        pass  # Required for compatibility with sys.stdout
 
 # Window object, specifying image source, buttons, text, image refresh rate, and other parameters
 # implementation partially inspired by https://scribles.net/showing-video-image-on-tkinter-window-with-opencv/ 
 class MainWindow():
     def __init__(self, window):
-        self.window = window # root
+        self.log_to_file("GUI started")
+        self.window = window 
+        self.window
         #self.cap = cap # image source
         #self.width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         #self.height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -103,8 +123,6 @@ class MainWindow():
         # True if using UDP to transmit, false if using serial
         self.transmission_udp = True
 
-        
-        
         
         """
         # Create canvas for image (could also use a label insteamobd)
@@ -123,46 +141,59 @@ class MainWindow():
         # Main CMOS sensor output image
         self.mainImage = tk.Canvas(self.window, width=IMAGE_WIDTH/4, height=IMAGE_HEIGHT/4)
         self.mainImage.create_rectangle(0, 0, IMAGE_WIDTH/4, IMAGE_HEIGHT/4, fill="red", outline="")
-        self.mainImage.pack(side=tk.TOP, padx=10, pady=10) 
+        #self.mainImage.pack(side=tk.TOP, padx=10, pady=10) 
+        self.mainImage.grid(row=0, column=0, rowspan=6, columnspan=1)
         
         # Text box
-        self.l = tk.Label(self.window, text = "Send a command to readout system")
-        self.l.config(font = ("Courier, 12"))
-        self.l.pack(side=tk.TOP, padx=10, pady=10)
+        #self.l = tk.Label(self.window, text = "Send a command to readout system")
+        #self.l.config(font = ("Courier, 12"))
+        #self.l.pack(side=tk.TOP, padx=10, pady=10)
+        #self.l.grid(row=1, column=0, padx=10, pady=10)
 
         # Create buttons to call associated function
         self.button_1 = tk.Button(self.window, text="Reset", command=self.send_reset)
-        self.button_1.pack(side=tk.LEFT, padx=10, pady=10)
+        #self.button_1.pack(side=tk.LEFT, padx=10, pady=10)
+        self.button_1.grid(row=0, column=1)
 
         self.button_2 = tk.Button(self.window, text="Abort", command=self.send_abort)
-        self.button_2.pack(side=tk.LEFT, padx=10, pady=10)
+        #self.button_2.pack(side=tk.LEFT, padx=10, pady=10)
+        self.button_2.grid(row=1, column=1)
 
         self.button_3 = tk.Button(self.window, text="Enter Image Collection Mode", command=self.send_enter_image_collection)
-        self.button_3.pack(side=tk.LEFT, padx=10, pady=10)
+        #self.button_3.pack(side=tk.LEFT, padx=10, pady=10)
+        self.button_3.grid(row=2, column=1)
 
         self.button_4 = tk.Button(self.window, text="Image Request", command=self.send_image_request)
-        self.button_4.pack(side=tk.LEFT, padx=10, pady=10)
+        #self.button_4.pack(side=tk.LEFT, padx=10, pady=10)
+        self.button_4.grid(row=3, column=1)
 
         self.button_5 = tk.Button(self.window, text="Change sensor settings...", command=open_popup)
-        self.button_5.pack(side=tk.LEFT, padx=10, pady=10)
+        #self.button_5.pack(side=tk.LEFT, padx=10, pady=10)
+        self.button_5.grid(row=4, column=1)
 
         self.button_6 = tk.Button(self.window, text="Toggle UDP/Serial", command=self.toggle_udp_serial)
-        self.button_6.pack(side=tk.LEFT, padx=10, pady=10)
+        #self.button_6.pack(side=tk.LEFT, padx=10, pady=10)
+        self.button_6.grid(row=5, column=1)
 
         self.commModetext = tk.Text(self.window, width=15, height=1)
         self.commModetext.insert(1.0, "Using UDP")
         self.commModetext.config(state="disabled")
-        self.commModetext.pack(side=tk.BOTTOM, padx=10, pady=10)
+        #self.commModetext.pack(side=tk.BOTTOM, padx=10, pady=10)
+        self.commModetext.grid(row=6, column=1)
 
         self.tele = tk.Text(self.window, width=30, height=6)
         self.tele.insert(1.0, "Waiting for telemetry")
         self.tele.config(state="disabled")
-        self.tele.pack(side=tk.BOTTOM, padx=10, pady=10)
+        #self.tele.pack(side=tk.BOTTOM, padx=10, pady=10)
+        self.tele.grid(row=7, column=1)
 
         self.console_output = tk.Text(self.window, height=10, width=80, wrap="word")
-        self.console_output.config(state="disabled")  # Make it read-only
-        self.console_output.pack(side=tk.BOTTOM, padx=10, pady=10)
+        self.console_output.config(state="disabled")  
+        #self.console_output.pack(side=tk.BOTTOM, padx=10, pady=10)
+        self.console_output.grid(row=7, column=0, padx=10)
 
+        sys.stdout = ConsoleRedirect(self.console_output)  # Redirect stdout to the text box
+        #sys.stderr = ConsoleRedirect(self.console_output)  # Redirect stderr to the text box
 
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
 
@@ -214,6 +245,8 @@ class MainWindow():
         # Tracker array for if corresponding row in frame is filled
         self.rowsFilled = np.ndarray((IMAGE_HEIGHT), dtype=bool)
         self.rowsFilled.fill(False)
+
+        
 
     
         while (True): 
@@ -481,6 +514,8 @@ class MainWindow():
         # Wait for processor thread to finish
         if self.processor_thread.is_alive():
             self.processor_thread.join(timeout=1.0)
+
+        sys.stdout = sys.__stdout__  # Restore original stdout
         self.window.destroy()
 
 
