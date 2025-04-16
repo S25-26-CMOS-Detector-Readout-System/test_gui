@@ -1,2 +1,7 @@
 packet_log.csv
 test.py
+gui.spec
+
+build/
+dist/
+__pycache__/
