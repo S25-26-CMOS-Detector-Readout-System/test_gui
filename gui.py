@@ -126,7 +126,6 @@ class MainWindow():
     def __init__(self, window):
         
         self.window = window 
-        self.window
         #self.cap = cap # image source
         #self.width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         #self.height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -174,7 +173,7 @@ class MainWindow():
         self.button_4 = tk.Button(self.window, text="Image Request", command=self.send_image_request)
         self.button_4.grid(row=3, column=1)
 
-        self.button_5 = tk.Button(self.window, text="Change sensor settings...", command=open_popup)
+        self.button_5 = tk.Button(self.window, text="Change sensor settings...", command=self.open_popup)
         self.button_5.grid(row=4, column=1)
 
         self.button_6 = tk.Button(self.window, text="Toggle UDP/Serial", command=self.toggle_udp_serial)
@@ -251,15 +250,12 @@ class MainWindow():
         self.rowsFilled = np.ndarray((IMAGE_HEIGHT), dtype=bool)
         self.rowsFilled.fill(False)
 
-        
-
-    
         while (True): 
             #time.sleep(0.2)
             
             dataHex = None
            
-            # Transmitting UDP
+            # Receiving UDP
             if (self.transmission_udp and self.sock != None):
                 try: 
                     self.data, self.addr = self.sock.recvfrom(4096)
@@ -270,16 +266,15 @@ class MainWindow():
                 dataHex = self.data.hex()
                 # Print raw bytes of received packet for diagnostic
                 print("UDP: " + dataHex)
-            # Transmitting Serial
-            elif(not self.transmission_udp and self.ser.is_open):
-                
+            # Reveiving Serial
+            elif (not self.transmission_udp and self.ser.is_open):
                 out = b""
                 while (self.ser.inWaiting() > 0):
                     out += self.ser.read(1)
                 if (out != b""):
                     print("Serial: " + out) 
                 continue
-            # Not transmitting
+            # Not receiving either
             else:
                 continue
 
@@ -291,10 +286,7 @@ class MainWindow():
             #    out += self.ser.read(1)
             #print(out) 
             
-            
-
-            # Eventually, want each bit of telemetry to have its own box rather than putting it all in one box
-            # Also, be able to log commands and telemetry
+        
             if (dataHex != None):
                 header = dataHex[0:2]
                 if (header.casefold() == SIG_IMAGE_DATA.casefold()):
@@ -367,9 +359,6 @@ class MainWindow():
                     self.log_to_file("Received ACK")
                     
                 
-                
-
-            
 
             #self.ser.write(str.encode(str(dummy_value))) # Send a dummy byte to trigger the readout system - replace with actual command
 
@@ -414,8 +403,6 @@ class MainWindow():
 
             except serial.SerialException as e:
                 self.log_to_file(f"Error opening serial connection (2): {e}")
-            
-            
             
         else: # If already transmitting with serial
             #self.ser.close()
@@ -465,7 +452,7 @@ class MainWindow():
     def send_enter_image_collection(self):
         if (self.transmission_udp and self.sock != None):
             self.sock.sendto(int(CMD_P_IMAGE_ENABLE, 16).to_bytes(2), self.addr)
-            # add unix timecode: 
+            # with unix timecode: 
             # self.sock.sendto(int(CMD_P_IMAGE_ENABLE + self.get_unix_time_hex(), 16).to_bytes(10), self.addr)
             self.log_to_file("Sent enter image collection mode, UDP")
         elif (not self.transmission_udp and self.ser.is_open):
@@ -484,12 +471,73 @@ class MainWindow():
             self.log_to_file("Sent image request, serial")
         else:
             self.log_to_file("Failed to send image request - no connection established")
-        
-        
 
+
+    def open_popup(self):
+        top = tk.Toplevel()
+        top.option_add("*Font", "Consolas 12")
+        #top.geometry("500x250")
+        top.title("Change Sensor Settings")
+        #label_top = tk.Label(top, text= "Change sensor settings")
+        #label_top.grid(row=0, column=0, padx=10, pady=10, rowspan=1, columnspan=3)
+
+        label_1 = tk.Label(top, text= "Subsampling setting (0x00)")
+        label_1.grid(row=1, column=0, padx=10, pady=10)
+        label_1_a = tk.Label(top, text= "0x")
+        label_1_a.grid(row=1, column=1, padx=0, pady=10)
+        inputText_1 = tk.Text(top, height = 1, width = 6, bg = "light yellow")
+        inputText_1.grid(row=1, column=2, padx=0, pady=10)
+
+        label_2 = tk.Label(top, text= "Offset (0x00)")
+        label_2.grid(row=2, column=0, padx=10, pady=10)
+        label_2_a = tk.Label(top, text= "0x")
+        label_2_a.grid(row=2, column=1, padx=0, pady=10)
+        inputText_2 = tk.Text(top, height = 1, width = 6, bg = "light yellow")
+        inputText_2.grid(row=2, column=2, padx=0, pady=10)
+
+        label_3 = tk.Label(top, text= "Analog gain (0x00)")
+        label_3.grid(row=3, column=0, padx=10, pady=10)
+        label_3_a = tk.Label(top, text= "0x")
+        label_3_a.grid(row=3, column=1, padx=0, pady=10)
+        inputText_3 = tk.Text(top, height = 1, width = 6, bg = "light yellow")
+        inputText_3.grid(row=3, column=2, padx=0, pady=10)
+
+        label_4 = tk.Label(top, text= "Digital gain (0x00)")
+        label_4.grid(row=4, column=0, padx=10, pady=10)
+        label_4_a = tk.Label(top, text= "0x")
+        label_4_a.grid(row=4, column=1, padx=0, pady=10)
+        inputText_4 = tk.Text(top, height = 1, width = 6, bg = "light yellow")
+        inputText_4.grid(row=4, column=2, padx=0, pady=10)
+
+        label_5 = tk.Label(top, text= "Bit resolution (0x0)")
+        label_5.grid(row=5, column=0, padx=10, pady=10)
+        label_5_a = tk.Label(top, text= "0x")
+        label_5_a.grid(row=5, column=1, padx=0, pady=10)
+        inputText_5 = tk.Text(top, height = 1, width = 6, bg = "light yellow")
+        inputText_5.grid(row=5, column=2, padx=0, pady=10)
+        
+        def submit_settings():
+            sensor_setting_data = inputText_1.get("1.0", "end-1c") + inputText_2.get("1.0", "end-1c") + inputText_3.get("1.0", "end-1c") + inputText_4.get("1.0", "end-1c") + inputText_5.get("1.0", "end-1c")
+            self.change_sensor_settings(sensor_setting_data)
+            
+        button_1 = tk.Button(top, text="Submit sensor settings...", font=("TkDefaultFont"), justify="right", anchor="w", command=submit_settings)
+        button_1.grid(row=6, column=0, padx=0, pady=10)
+
+            
     def change_sensor_settings(self, spec1): #spec1 instead of self?
-        # TODO
-        self.log_to_file("Sensor setting changed to " + str(spec1))
+        #print(len(spec1))
+        if (self.transmission_udp and self.sock != None):
+            self.sock.sendto(int(CMD_P_CMOS_SETTING + spec1, 16).to_bytes(10), self.addr)
+            self.log_to_file("Sent change sensor setting, UDP")
+            self.log_to_file("Sensor setting changed to " + spec1)
+        elif (not self.transmission_udp and self.ser.is_open):
+            self.ser.write(str.encode(CMD_P_CMOS_SETTING + spec1))
+            self.log_to_file("Sent change sensor setting, serial")
+            self.log_to_file("Sensor setting changed to " + spec1)
+        else:
+            self.log_to_file("Failed to send change sensor setting - no connection established: " + spec1)
+            
+        
 
 
     # Get Unix timestamp as 64-bit integer to sent with packets
@@ -521,7 +569,6 @@ class MainWindow():
                 writer.writerow([timestamp, message, telemetry.state, telemetry.temp1, telemetry.temp2, telemetry.voltage, telemetry.fault_code])
 
 
-
     def on_closing(self):
         self.log_to_file("Closing GUI")
         # Set a flag to stop the processing thread
@@ -540,25 +587,6 @@ class MainWindow():
 
         sys.stdout = sys.__stdout__  # Restore original stdout
         self.window.destroy()
-
-
-  
-        
-
-# Move this back into the MainWindow() function
-def open_popup():
-        top = tk.Toplevel()
-        top.geometry("500x250")
-        top.title("Change Sensor Settings")
-        label_1 = tk.Label(top, text= "Placeholder: Change sensor setting", font=('Courier, 12'))
-        label_1.place(x=80,y=80)
-        inputtxt = tk.Text(top, height = 1, width = 14, bg = "light yellow")
-        inputtxt.pack(side=tk.LEFT, padx=10, pady=10)
-        button_1 = tk.Button(top, text="Change sensor settings...", command=lambda: change_sensor_settings(inputtxt.get("1.0", "end-1c"), args = self))
-        #button_6 = Button(top, text="Change sensor settings...", command=change_sensor_settings(100))
-        button_1.pack(side=tk.LEFT, padx=10, pady=10)
-
-        top.mainloop()
 
 
 def udp_start():
@@ -585,13 +613,12 @@ def echo_server(host, port):
     return sock
 
 
-
 # Creates a GUI to display a constantly updating image and provide buttons for custom actions
 def create_gui():
     
     # Create a Tkinter object
     root = tk.Tk()
-    root.title("CMOS Readout System Test GUI")
+    root.title("CMOS Readout System Test System")
 
     # Load the window
     window = MainWindow(root)
@@ -602,9 +629,9 @@ def create_gui():
 
     return root, window
 
+
 if __name__ == "__main__":
     # Create and launch the GUI
-    
     print("Starting GUI - this may take a moment")
     create_gui()
     
