@@ -5,3 +5,4 @@ gui.spec
 build/
 dist/
 __pycache__/
+saved_images/
